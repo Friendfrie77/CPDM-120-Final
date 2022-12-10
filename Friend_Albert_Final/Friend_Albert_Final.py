@@ -52,7 +52,7 @@ def Navigation (intNavigationSelect):
             New_Customer()
             strFlag = True
         case 2:
-            Customer_Checkout()
+            Checkout()
             strFlag = True
         case 3:
             objShop.displaystock()
@@ -77,7 +77,6 @@ def User_New_Request (strRequestNew, customer):
         return 1
     elif strRequestNew.lower() == 'n':
         print("Sorry we could not do business with you.")
-        del customer
         return 2
     elif strRequestNew.lower() != "y" or "n":
         print("Please select one of the two options.")
@@ -110,18 +109,31 @@ def User_RequestBike_Number(customer):
         return strFlag
 
 #--------------------------------------------------------------------------
-#1. Function Name: Customer_Checkout
+#1. Function Name: Checkout
 #2. Function Description: allowing for customer to check out
 #--------------------------------------------------------------------------
-def Customer_Checkout():
+def Checkout():
+    global strFlag
+    strFlag = False
     global Customer_list
-    customerID = input("Please enter your customer ID")
-    customer = globals()['objCustomer%s' % int(customerID)]
-    try:
-        request = customer.returnBike()
-        objShop.returnBike(request)
-    except:
-        print('Are you sure that is your ID?')
+
+    while strFlag == False:
+       intReturn = Customer.Customer_Checkout()
+       if intReturn == -1:
+           strRequest = input("Would you like to try again? Y/N: ")
+           if strRequest.lower() == 'y':
+               intReturn = Customer.Customer_Checkout()
+           elif strRequest.lower() == 'n':
+               print("Please see an associate for help returning your bike")
+               intReturn = 1
+               strFlag = True
+           elif strRequest.lower() != "y" or "n":
+               print("Please enter only (Y/N).")
+       else:
+           customer = Customer_list[intReturn]
+           request = customer.returnBike()
+           objShop.returnBike(request)
+           strFlag = True
 
 #--------------------------------------------------------------------------
 #1. Function Name: New_Customer
@@ -130,27 +142,20 @@ def Customer_Checkout():
 def New_Customer():
     global intCustomerCount
     global Customer_list
+    global Customer_info
     strFlag = False
     intReturn = -1
     strRequestNew = 0
-
-    globals()['objCustomer%s' % intCustomerCount] = Customer()
-    globals()['objCustomer%s' % intCustomerCount].customerInfo()
-    Customer_list.append (globals()['objCustomer%s' % intCustomerCount].info)
-    customer = globals()['objCustomer%s' % intCustomerCount]
+    
+    #sets up new object and gathers information
+    customer = 'objCustomer%s' % intCustomerCount
+    Customer_list.append(customer)
+    Customer_list[intCustomerCount] = Customer()
+    customer = Customer_list[intCustomerCount]
+    customer.customerInfo()
+    Customer_info.append(customer.info)
 
     while strFlag == False:
-        while strFlag == False:
-            strFlag = User_RequestBike_Number(customer)
-
-        strFlag = False
-       
-
-        while strFlag == False:
-            strFlag = User_RequestBike_Type(customer)
-
-        strFlag = False
- 
         while strFlag == False:
             while intReturn == -1:
                 intReturn = customer.requestBasistype()
@@ -159,10 +164,19 @@ def New_Customer():
 
         strFlag = False
         
-
         while strFlag == False:
             customer.rentTime()
             strFlag = True
+
+        strFlag = False
+
+        while strFlag == False:
+            strFlag = User_RequestBike_Type(customer)
+
+        strFlag = False
+
+        while strFlag == False:
+            strFlag = User_RequestBike_Number(customer)
 
         strFlag = False
 
@@ -176,11 +190,11 @@ def New_Customer():
         while strFlag == False:
             match customer.rentalBasis:
                 case 1:
-                    intReturn = objShop.rentBikeOnHourlyBasis(customer.bikes, customer.biketype, customer.rentalTimeInput)
+                    intReturn = objShop.rentBikeOnHourlyBasis(customer.bikes, customer.biketype, customer.rentalTimeInput, intCustomerCount)
                 case 2:
-                    intReturn = objShop.rentBikeOnDailyBasis(customer.bikes, customer.biketype, customer.rentalTimeInput)
+                    intReturn = objShop.rentBikeOnDailyBasis(customer.bikes, customer.biketype, customer.rentalTimeInput, intCustomerCount)
                 case 3:
-                    intReturn = objShop.rentBikeOnWeeklyBasis(customer.bikes, customer.biketype, customer.rentalTimeInput)
+                    intReturn = objShop.rentBikeOnWeeklyBasis(customer.bikes, customer.biketype, customer.rentalTimeInput, intCustomerCount)
             if intReturn == None:
                 strRequestNew = 0 
                 print("We are sorry that we didnt have the requested bike type.")
@@ -189,10 +203,14 @@ def New_Customer():
                     strRequestNew = input("Would you like to request a differnt bike type and number of bikes? Y/N: ")
                     strRequestNew = User_New_Request(strRequestNew, customer)
                     if strRequestNew == 2:
+                        del Customer_list[intCustomerCount]
+                        del Customer_info[intCustomerCount]
+                        Customer.removeCustomer()
                         strFlag = True;
+
             else:
                 strFlag = True
-
+                intCustomerCount += 1
 
     
 #---------------------------------------------
@@ -206,6 +224,7 @@ intRoad = 0
 intTouring= 0
 intCustomerCount = 0
 Customer_list = []
+Customer_info = []
 strFlag = False
 
 while strFlag == False:

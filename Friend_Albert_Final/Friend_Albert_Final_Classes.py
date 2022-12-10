@@ -1,9 +1,12 @@
 import datetime
 from datetime import datetime, timedelta
-import math
-    
+
 class BikeRental:
-    dlbRunningDailyTotal = 0 
+    dlbRunningDailyTotal = 0
+    intRentedBikes = 0
+    intRentedRoadBikes = 0
+    intRentedTouringBikes = 0
+    intRentedMountainBikes = 0
     def __init__(self, mountain = 0, road = 0, touring = 0, stock = 0):
         """
         Our constructor class that instantiates bike rental shop.
@@ -12,7 +15,7 @@ class BikeRental:
         self.touring = touring
         self.road = road
         self.stock = mountain + road + touring
-        
+        self.rentedBikes = 0
     def displaystock(self):
         """
         Displays the bikes currently available for rent in the shop.
@@ -25,7 +28,7 @@ class BikeRental:
         Displays the amount of bikes rented out
         """
 
-    def rentBikeOnHourlyBasis(self, n, bikeType, rentalTimeInput):
+    def rentBikeOnHourlyBasis(self, n, bikeType, rentalTimeInput, idNumber):
         """
         Rents a bike on hourly basis to a customer.
         """
@@ -58,11 +61,13 @@ class BikeRental:
             now = datetime.now()
             print("You have rented a {} bike(s) on hourly basis today at {} for {} hour(s).".format(n, now.time(), rentalTimeInput))
             print("You will be charged $5 for each hour per bike.")
+            print("Your ID number is: {}. Please remeber this for checkout.".format(idNumber))
             print("We hope that you enjoy our service.")
             self.stock -= n
+            self.rentedBikes += n
             return now      
      
-    def rentBikeOnDailyBasis(self, n, bikeType, rentalTimeInput):
+    def rentBikeOnDailyBasis(self, n, bikeType, rentalTimeInput, idNumber):
         """
         Rents a bike on daily basis to a customer.
         """
@@ -93,11 +98,13 @@ class BikeRental:
             now = datetime.now()                      
             print("You have rented {} bike(s) on daily basis today at {} for {} day(s).".format(n, now.time(), rentalTimeInput))
             print("You will be charged $20 for each day per bike.")
+            print("Your ID number is: {}. Please remeber this for checkout.".format(idNumber))
             print("We hope that you enjoy our service.")
             self.stock -= n
+            self.rentedBikes += n
             return now
         
-    def rentBikeOnWeeklyBasis(self, n, bikeType, rentalTimeInput):
+    def rentBikeOnWeeklyBasis(self, n, bikeType, rentalTimeInput, idNumber):
         """
         Rents a bike on weekly basis to a customer.
         """
@@ -127,8 +134,10 @@ class BikeRental:
             now = datetime.now()
             print("You have rented {} bike(s) on weekly basis today at {} for {} week(s).".format(n, now.time(), rentalTimeInput))
             print("You will be charged $60 for each week per bike.")
+            print("Your ID number is: {}. Please remeber this for checkout.".format(idNumber))
             print("We hope that you enjoy our service.")
             self.stock -= n
+            self.rentedBikes += n
             return now
     
     
@@ -144,13 +153,18 @@ class BikeRental:
         bill = 0
         # issue a bill only if all three parameters are not null!
         if rentalTime and rentalBasis and numOfBikes and bikeType:
+            BikeRental.intRentedBikes += numOfBikes
             self.stock += numOfBikes
+            self.rentedBikes -= numOfBikes
             if bikeType == 'mountain':
                 self.mountain += numOfBikes
+                BikeRental.intRentedMountainBikes += numOfBikes
             elif bikeType == 'touring':
                 self.touring += numOfBikes
+                BikeRental.intRentedTouringBikes += numOfBikes
             else:
                 self.road += numOfBikes
+                BikeRental.intRentedRoadBikes += numOfBikes
             now = datetime.now()
             rentalPeriod = now - rentalTime
             # hourly bill calculation
@@ -169,9 +183,13 @@ class BikeRental:
             if (3 <= numOfBikes <= 5):
                 print("You are eligible for Family rental promotion of 30% discount")
                 bill = bill * 0.7
+            if couponCode == 'Y':
+                print("You are eligible for a discount coupon of 10% off")
+                bill = bill * 0.9
             print("Thanks for returning your bike. Hope you enjoyed our service!")
             print("That would be ${}".format(bill))
             BikeRental.dlbRunningDailyTotal += bill
+
             return bill
         
         else:
@@ -179,10 +197,19 @@ class BikeRental:
             return None
 
     def endOfDay (self):
+        # ends the day, displaying the amount made, the bikes rented and the bikes still out for rent.
         print("The total revenue for the day was ${}.".format(BikeRental.dlbRunningDailyTotal))
+        print("We have completed rentals on {} bikes in total today. With {} being mountain bikes, {} being touring bikes, and {} being road bikes".format(BikeRental.intRentedBikes, BikeRental.intRentedMountainBikes, BikeRental.intRentedTouringBikes, BikeRental.intRentedRoadBikes))
+        print("We still have {} bikes out for rent.".format(self.rentedBikes))
         BikeRental.dlbRunningDailyTotal = 0
+        BikeRental.intRentedBikes = 0
+        BikeRental.intRentedRoadBikes = 0
+        BikeRental.intRentedMountainBikes = 0
+        BikeRental.intRentedTouringBikes = 0
+
 class Customer:
     intCustomerCount = 0
+    Customer_list = []
     def __init__(self):
         """
         Our constructor method which instantiates various customer objects.
@@ -194,17 +221,19 @@ class Customer:
         self.rentalTime = 0
         self.rentalTimeInput = 0
         self.bill = 0
-        self.Name = ''
         self.CustomerID = 0
-        self.info = []
+        self.info = ()
         self.coupon = ''
         strFlag = False
 
     def customerInfo(self):
+        """
+        Gathers customer information and gives them a ID number
+        """
         name = input("Please enter your name: ")
         CustomerID = Customer.intCustomerCount
-        self.info.append((name, CustomerID))
-        self.name = name 
+        self.info = (name, CustomerID)
+        Customer.Customer_list.append(self.info)
         print("Your customer id is {}. Please remeber this for checkout.".format(CustomerID))
         Customer.intCustomerCount += 1 
         return self.info
@@ -228,6 +257,9 @@ class Customer:
         return self.bikes
 
     def requestBikeType(self):
+        """
+        seeing what type of bike the customer would like
+        """
         biketype = input("Would you like mountain, road, or touring bikes?")
         # implement logic for checking for bike type
         try:
@@ -251,6 +283,10 @@ class Customer:
                     return -1 
 
     def requestBasistype(self):
+        """
+        Checking what type of rental customer would like
+        """
+
         strType = input("Please enter what type of rental you would like (Hourly: $5 per, Daily: $20 per, Weekly: $60 per): ")
 
         try:
@@ -294,14 +330,24 @@ class Customer:
                         self.rentalTimeInput = datetime.now()-self.rentalTime
                 case 2:
                     rentalTime = input('How many days would you like to rent the bike(s) for? ')
-                    self.validationOfTime(rentalTime)
+                    rentalTime = self.validationOfTime(rentalTime)
+                    if rentalTime != -1:
+                        self.rentalTime = datetime.now() + timedelta(days=-self.rentalTime)
+                        self.rentalTimeInput = datetime.now()-self.rentalTime
                 case 3:
                     rentalTime = input('How many weeks would you like to rent the bike(s) for? ')
                     self.validationOfTime(rentalTime)
+                    if rentalTime != -1:
+                        self.rentalTime = datetime.now() + timedelta(weeks=-self.rentalTime)
+                        self.rentalTimeInput = datetime.now()-self.rentalTime
    
         return self.rentalTime
 
     def validationOfTime(self, rentalTime):
+        """
+        Validation of the rental time
+        """
+
         try:
             if not rentalTime.isdigit() or type(rentalTime) == float:
                 print("Please input a whole number greater than zero.")
@@ -355,6 +401,33 @@ class Customer:
             self.couponCode = 'Y'
             return 1
 
+    def removeCustomer():
+        """
+        removes customer from list and subtracts 1 from customer count if customer does not finish renting
+        """
+        Customer.intCustomerCount -= 1
+        del Customer.Customer_list[Customer.intCustomerCount]
+    def Customer_Checkout():
+        """
+        allows information to be gathered for customer checkout
+        """
+        info = input("Please the ID number given to you when you rented: ")
+        try:
+            info = int(info)
+        except ValueError:
+            print("Please enter a whole number as your ID.")
+            return -1
+
+        try: 
+            info = Customer.Customer_list[info]
+            ID = int(info[1])
+        except IndexError:
+            print("Please check you Id number, as it does not appear in our system.")
+            return -1 
+        
+        print('Hello {},'.format(info[0]))
+        del Customer.Customer_list[ID]
+        return ID
 
     def returnBike(self):
         """
@@ -370,13 +443,13 @@ class Customer:
 #shop1 = BikeRental(30)
 #shop2 = BikeRental(30)
 
-###shop1.displaystock()
+##shop1.displaystock()
 
-###shop1.rentBikeOnHourlyBasis(31)
+##shop1.rentBikeOnHourlyBasis(31)
 
-###shop2.rentBikeOnDailyBasis(-1)
+##shop2.rentBikeOnDailyBasis(-1)
 
-###shop2.rentBikeOnWeeklyBasis(11)
+##shop2.rentBikeOnWeeklyBasis(11)
 
 
 
@@ -414,13 +487,13 @@ class Customer:
 #print(customer1.rentalTime)
 ## create request to return the bike
 #request1 = customer1.returnBike()
-##request2 = customer2.returnBike()
-##request3 = customer3.returnBike()
-##request4 = customer4.returnBike()
+#request2 = customer2.returnBike()
+#request3 = customer3.returnBike()
+#request4 = customer4.returnBike()
 
 ## return the bike to shop and get a bill
 #shop1.returnBike(request1) 
-##shop1.returnBike(request2) 
-##shop1.returnBike(request3) 
-##shop1.returnBike(request4) 
+#shop1.returnBike(request2) 
+#shop1.returnBike(request3) 
+#shop1.returnBike(request4) 
 
